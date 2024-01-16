@@ -1,6 +1,8 @@
 package websocket
 
-import "log"
+import (
+	"log"
+)
 
 type Hub struct {
 	Clients    map[*Client]bool
