@@ -42,3 +42,9 @@ func (ur *UserRepository) CreateUser(user *domain.User) error {
 	_, err := ur.Collection.InsertOne(context.TODO(), user)
 	return err
 }
+
+func (ur *UserRepository) DeleteUser(nickname string) (*mongo.DeleteResult, error) {
+	filter := bson.M{"nickname": nickname}
+	result, err := ur.Collection.DeleteOne(context.TODO(), filter)
+	return result, err
+}
