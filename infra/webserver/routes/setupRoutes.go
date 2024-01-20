@@ -53,6 +53,31 @@ func handleUserRoutes(mux *chi.Mux, userRepo *repository.UserRepository) {
 		writer.Write([]byte("User created successfully."))
 	})
 
+	mux.Delete("/delete", func(writer http.ResponseWriter, request *http.Request) {
+		nickname := request.URL.Query().Get("nickname")
+
+		if nickname == "" {
+			http.Error(writer, "Nickname parameter is required.", http.StatusBadRequest)
+			return
+		}
+
+		result, err := userRepo.DeleteUser(nickname)
+		if err != nil {
+			http.Error(writer, "Error trying to delete an user", http.StatusInternalServerError)
+			return
+		}
+
+		if result.DeletedCount == 1 {
+			writer.WriteHeader(http.StatusOK)
+			writer.Write([]byte("User deleted successfully."))
+			return
+		}
+
+		writer.WriteHeader(http.StatusNotFound)
+		writer.Write([]byte("User not found."))
+		return
+	})
+
 	mux.Get("/getByNickName", func(writer http.ResponseWriter, request *http.Request) {
 		nickname := request.URL.Query().Get("nickname")
 
