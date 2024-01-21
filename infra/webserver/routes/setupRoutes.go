@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -51,6 +52,57 @@ func handleUserRoutes(mux *chi.Mux, userRepo *repository.UserRepository) {
 
 		writer.WriteHeader(http.StatusCreated)
 		writer.Write([]byte("User created successfully."))
+	})
+
+	mux.Put("/update", func(writer http.ResponseWriter, request *http.Request) {
+		var user domain.User
+
+		if err := json.NewDecoder(request.Body).Decode(&user); err != nil {
+			http.Error(writer, "Error decodifying JSON", http.StatusBadRequest)
+			return
+		}
+
+		if user.Gender == "" || user.Nickname == "" || user.Password == "" {
+			http.Error(writer, "All mandatory fields must be provided.", http.StatusBadRequest)
+			return
+		}
+
+		existingUser, err := userRepo.GetUserByNickName(user.Nickname)
+
+		if err != nil {
+			if err.Error() != "User not found" {
+				http.Error(writer, "Error getting user by nickname", http.StatusInternalServerError)
+				return
+			} else {
+				http.Error(writer, "User not found", http.StatusNotFound)
+				return
+			}
+		}
+
+		if existingUser != nil {
+			existingUser.Nickname = user.Nickname
+			existingUser.Password = user.Password
+			existingUser.Gender = user.Gender
+			existingUser.PhoneNumber = user.PhoneNumber
+
+			if len(user.Interests) > 0 {
+				existingUser.Interests = user.Interests
+			} else {
+				existingUser.Interests = []string{}
+			}
+
+			_, err := userRepo.UpdateUser(existingUser)
+			if err != nil {
+				fmt.Print(err)
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte("User updated successfully."))
+		return
+
 	})
 
 	mux.Delete("/delete", func(writer http.ResponseWriter, request *http.Request) {
