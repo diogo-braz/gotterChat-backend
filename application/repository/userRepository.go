@@ -29,12 +29,7 @@ func (ur *UserRepository) GetUserByNickName(nickName string) (*domain.User, erro
 		}
 		return nil, err
 	}
-	if err := result.Decode(&user); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("User not found")
-		}
-		return nil, err
-	}
+
 	return &user, nil
 }
 
@@ -46,5 +41,27 @@ func (ur *UserRepository) CreateUser(user *domain.User) error {
 func (ur *UserRepository) DeleteUser(nickname string) (*mongo.DeleteResult, error) {
 	filter := bson.M{"nickname": nickname}
 	result, err := ur.Collection.DeleteOne(context.TODO(), filter)
+	return result, err
+}
+
+func (ur *UserRepository) UpdateUser(user *domain.User) (*mongo.UpdateResult, error) {
+	filter := bson.M{"nickname": user.Nickname}
+
+	update := bson.M{
+		"$set": bson.M{
+			"nickname":    user.Nickname,
+			"password":    user.Password,
+			"gender":      user.Gender,
+			"phoneNumber": user.PhoneNumber,
+			"interests":   user.Interests,
+		},
+	}
+
+	result, err := ur.Collection.UpdateOne(context.TODO(), filter, update)
+
+	if result.ModifiedCount == 0 {
+		return result, errors.New("User not found or no changes applied")
+	}
+
 	return result, err
 }
